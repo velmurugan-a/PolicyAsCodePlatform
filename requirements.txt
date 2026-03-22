@@ -17,6 +17,7 @@ requests==2.31.0
 
 # Utilities
 python-dotenv==1.0.0
+setuptools==79.0.1
 
 # Testing
 pytest==7.4.2

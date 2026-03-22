@@ -1,0 +1,3 @@
+.\opa.exe run --server --addr localhost:8181 opa_policies
+
+python run.py

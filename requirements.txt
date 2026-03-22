@@ -1,0 +1,23 @@
+# Policy-as-Code Platform Dependencies
+# Flask and Extensions
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Flask-JWT-Extended==4.5.3
+Flask-CORS==4.0.0
+
+# Security
+bcrypt==4.0.1
+PyJWT==2.8.0
+
+# HTTP Client for OPA
+requests==2.31.0
+
+# Database
+# SQLite is built into Python, no separate package needed
+
+# Utilities
+python-dotenv==1.0.0
+
+# Testing
+pytest==7.4.2
+pytest-flask==1.2.0

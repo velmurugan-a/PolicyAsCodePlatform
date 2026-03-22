@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Users - Policy-as-Code Platform{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
+    <p class="text-gray-500 mt-1">View and manage user accounts and their attributes</p>
+</div>
+
+<!-- Users Table -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    {% if users %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for user in users %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold
+                                {% if user.role == 'admin' %}bg-red-500
+                                {% elif user.role == 'manager' %}bg-blue-500
+                                {% else %}bg-green-500{% endif %}">
+                                {{ user.username[0]|upper }}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                                <div class="text-sm text-gray-500">{{ user.email }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full
+                            {% if user.role == 'admin' %}bg-red-100 text-red-800
+                            {% elif user.role == 'manager' %}bg-blue-100 text-blue-800
+                            {% else %}bg-green-100 text-green-800{% endif %}">
+                            {{ user.role|capitalize }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ user.department|capitalize }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ user.designation or '-' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if user.is_active %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Active</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ user.created_at.strftime('%Y-%m-%d') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No users yet</h3>
+        <p class="text-gray-500">Run the initialization script to create sample users.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- User Attributes Info -->
+<div class="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">User Attributes for ABAC</h2>
+    <p class="text-gray-600 mb-4">
+        These attributes are included in the JWT token and sent to OPA for policy evaluation:
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium text-gray-900 mb-2">Role</h3>
+            <p class="text-sm text-gray-600">Defines the user's permission level: admin, manager, or employee.</p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium text-gray-900 mb-2">Department</h3>
+            <p class="text-sm text-gray-600">Used for department-based access control: engineering, hr, finance, etc.</p>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium text-gray-900 mb-2">Designation</h3>
+            <p class="text-sm text-gray-600">Job title that can be used for fine-grained access decisions.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

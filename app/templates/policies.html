@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Policies - Policy-as-Code Platform{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Policy Management</h1>
+        <p class="text-gray-500 mt-1">Manage Rego policies for authorization</p>
+    </div>
+    <a href="/policies/new" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Policy
+    </a>
+</div>
+
+<!-- Policies Table -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    {% if policies %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for policy in policies %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ policy.name }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-500 max-w-xs truncate">{{ policy.description or 'No description' }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">v{{ policy.version }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if policy.is_active %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Active</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ policy.created_at.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <button onclick="viewPolicy({{ policy.id }})" class="text-primary-600 hover:text-primary-900">View</button>
+                        <a href="/policies/edit/{{ policy.id }}" class="text-primary-600 hover:text-primary-900">Edit</a>
+                        <button onclick="togglePolicy({{ policy.id }}, {{ 'true' if policy.is_active else 'false' }})" 
+                            class="{% if policy.is_active %}text-yellow-600 hover:text-yellow-900{% else %}text-green-600 hover:text-green-900{% endif %}">
+                            {{ 'Disable' if policy.is_active else 'Enable' }}
+                        </button>
+                        <button onclick="deletePolicy({{ policy.id }}, '{{ policy.name }}')" class="text-red-600 hover:text-red-900">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No policies yet</h3>
+        <p class="text-gray-500 mb-4">Get started by creating your first Rego policy.</p>
+        <a href="/policies/new" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Policy
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- View Policy Modal -->
+<div id="policyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center px-6 py-4 border-b">
+            <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">Policy Details</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[70vh]">
+            <pre id="policyCode" class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm"></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function viewPolicy(id) {
+        const token = getToken();
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/login';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/policy/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                document.getElementById('modalTitle').textContent = data.data.policy.name;
+                document.getElementById('policyCode').textContent = data.data.policy.policy_code;
+                document.getElementById('policyModal').classList.remove('hidden');
+                document.getElementById('policyModal').classList.add('flex');
+            } else {
+                alert(data.message || 'Failed to load policy');
+            }
+        } catch (e) {
+            alert('Error loading policy');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('policyModal').classList.add('hidden');
+        document.getElementById('policyModal').classList.remove('flex');
+    }
+
+    async function togglePolicy(id, isActive) {
+        const token = getToken();
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/login';
+            return;
+        }
+
+        const action = isActive ? 'disable' : 'enable';
+        if (!confirm(`Are you sure you want to ${action} this policy?`)) return;
+
+        try {
+            const response = await fetch(`/policy/toggle/${id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to toggle policy');
+            }
+        } catch (e) {
+            alert('Error toggling policy');
+        }
+    }
+
+    async function deletePolicy(id, name) {
+        const token = getToken();
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/login';
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete the policy "${name}"? This action cannot be undone.`)) return;
+
+        try {
+            const response = await fetch(`/policy/delete/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to delete policy');
+            }
+        } catch (e) {
+            alert('Error deleting policy');
+        }
+    }
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+{% endblock %}
